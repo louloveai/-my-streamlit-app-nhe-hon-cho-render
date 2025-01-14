@@ -108,6 +108,11 @@ class MentalHealthApp:
 
     def get_response(self, emotion, text):
         """Tạo phản hồi thông minh với khả năng search"""
+        # Thêm xử lý đặc biệt cho lời chào
+        greetings = ["chào", "hi", "hello", "xin chào"]
+        if any(word in text.lower() for word in greetings):
+            return "Chào bạn nhé! Chúc bạn một ngày tốt lành. Hôm nay bạn có muốn chia sẻ điều gì với mình không?"
+        
         response = random.choice(self.responses[emotion])
         
         # Kiểm tra nếu cần search
@@ -130,6 +135,17 @@ class MentalHealthApp:
                     response += f"\n\nThông tin bổ sung: {extra_info[0]}"
                 break
             
+        # Thêm xử lý cho yêu cầu tìm giải pháp
+        if any(keyword in text.lower() for keyword in ["giải pháp", "cách", "làm sao"]):
+            if "trầm cảm" in text.lower():
+                search_results = self.google_search.search_and_summarize("cách điều trị trầm cảm tâm lý học", num_results=3)
+                if search_results:
+                    response = "Dưới đây là một số giải pháp cho tình trạng trầm cảm:\n\n"
+                    for idx, result in enumerate(search_results, 1):
+                        response += f"{idx}. {result}\n\n"
+                    response += "\nBạn có thể thử áp dụng những phương pháp trên. Nếu tình trạng không cải thiện, hãy tìm đến sự giúp đỡ của chuyên gia tâm lý nhé."
+                    return response
+                
         return response
     def setup_streamlit(self):
         # Bỏ dark/light mode toggle, chỉ dùng dark theme
@@ -241,3 +257,4 @@ class GoogleSearch:
 if __name__ == "__main__":
     app = MentalHealthApp()
     app.run()
+
