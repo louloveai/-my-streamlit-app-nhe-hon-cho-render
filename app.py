@@ -45,7 +45,7 @@ class MentalHealthApp:
                 "depression": "Trầm cảm là một tình trạng cần được quan tâm và điều trị. Đừng ngần ngại tìm sự giúp đỡ từ chuyên gia.",
                 "healing": "Chữa lành là một hành trình, không phải đích đến. Mỗi bước nhỏ đều có ý nghĩa."
             }
-
+            color: white;
         except Exception as e:
             logging.error(f"❌ Model initialization error: {e}")
 
