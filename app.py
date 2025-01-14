@@ -3,11 +3,16 @@ from transformers import pipeline
 import logging
 import torch
 import random
-from googletrans import GoogleTranslator
+from deep_translator import GoogleTranslator
 from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
 import re
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 class MentalHealthApp:
     def __init__(self):
@@ -169,6 +174,14 @@ class MentalHealthApp:
         # Cập nhật tiến trình
         self.context_memory["therapy_progress"][emotion] = \
             self.context_memory["therapy_progress"].get(emotion, 0) + 1
+
+    def run(self):
+        """Chạy ứng dụng Streamlit"""
+        try:
+            self.setup_streamlit()
+        except Exception as e:
+            logging.error(f"Runtime error: {e}")
+            st.error("Có lỗi xảy ra, vui lòng thử lại sau.")
 
 class GoogleSearch:
     def __init__(self):
