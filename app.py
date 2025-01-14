@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 from transformers import pipeline
 import logging
@@ -13,6 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 class MentalHealthApp:
     def __init__(self):
         self.setup_models()
@@ -42,7 +45,7 @@ class MentalHealthApp:
                     "Niềm vui của bạn là một phần quan trọng trong hành trình chữa lành. Hãy trân trọng khoảnh khắc này.",
                     "Tôi rất vui khi thấy năng lượng tích cực của bạn. Điều này rất tốt cho quá trình chữa lành.",
                     "Cảm xúc tích cực giúp giải phóng endorphin - hormone hạnh phúc trong cơ thể bạn.",
-                    "Hãy giữ vững tinh thần này nhé! Mỗi khoảnh khắc tích cực đều rất quý giá."
+                    "Hãy giữ vững tinh thần này nhé! Mỗi khoảnh khắc tích cực đều rất quý giá.",
                     "Tôi rất vui khi thấy bạn có trạng thái tích cực. Điều này rất tốt cho sức khỏe tinh thần."
                 ],
                 "NEGATIVE": [
@@ -89,12 +92,21 @@ class MentalHealthApp:
     def analyze_emotion(self, text):
         """Phân tích cảm xúc với DistilBERT"""
         try:
+            # Thêm kiểm tra text rỗng
+            if not text.strip():
+                return "NEGATIVE"
+            
             english_text = self.translator.translate(text)
+            # Thêm kiểm tra kết quả dịch
+            if not english_text:
+                logging.warning("Translation failed")
+                return "NEGATIVE"
+            
             result = self.analyzer(english_text)
-            return result['label'].lower()
+            return result[0]['label']
         except Exception as e:
             logging.error(f"Lỗi phân tích cảm xúc: {e}")
-            return "neutral"
+            return "NEGATIVE"
 
     def get_response(self, emotion, text):
         """Tạo phản hồi thông minh với khả năng search"""
@@ -152,6 +164,7 @@ class MentalHealthApp:
         st.title("🌿 AI Chữa Lành")
 
         if prompt := st.chat_input("Chia sẻ cảm xúc của bạn..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
             emotion = self.analyze_emotion(prompt)
             response = self.get_response(emotion, prompt)
             st.session_state.messages.append({"role": "assistant", "content": response})
@@ -161,7 +174,12 @@ class MentalHealthApp:
     def update_context(self, emotion, text):
         """Cập nhật context của cuộc trò chuyện"""
         self.context_memory["last_emotion"] = emotion
-        # Theo dõi chủ đề
+        
+        # Giới hạn số lượng topics lưu trữ
+        MAX_TOPICS = 100
+        if len(self.context_memory["conversation_topics"]) > MAX_TOPICS:
+            self.context_memory["conversation_topics"] = self.context_memory["conversation_topics"][-MAX_TOPICS:]
+        
         for topic in self.therapy_topics.keys():
             if topic in text.lower():
                 self.context_memory["conversation_topics"].append(topic)
@@ -176,6 +194,18 @@ class MentalHealthApp:
         except Exception as e:
             logging.error(f"Runtime error: {e}")
             st.error("Có lỗi xảy ra, vui lòng thử lại sau.")
+            return  # Thêm return để tránh crash
+
+    def __del__(self):
+        """Cleanup khi đóng ứng dụng"""
+        try:
+            # Xóa models khỏi memory
+            del self.analyzer
+            del self.translator
+            torch.cuda.empty_cache()  # Nếu dùng GPU
+        except Exception as e:
+            logging.error(f"Cleanup error: {e}")
+
 class GoogleSearch:
     def __init__(self):
         self.headers = {
@@ -201,7 +231,8 @@ class GoogleSearch:
                     text = re.sub(r'\s+', ' ', text).strip()
                     if text:
                         results.append(text[:500])  # Giới hạn độ dài
-                except:
+                except Exception as e:
+                    logging.error(f"Error fetching URL {url}: {e}")
                     continue
                     
             return results
@@ -212,4 +243,3 @@ class GoogleSearch:
 if __name__ == "__main__":
     app = MentalHealthApp()
     app.run()
-
