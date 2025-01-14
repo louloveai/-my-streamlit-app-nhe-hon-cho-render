@@ -13,7 +13,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-
 class MentalHealthApp:
     def __init__(self):
         self.setup_models()
@@ -26,7 +25,6 @@ class MentalHealthApp:
             "conversation_topics": [],
             "therapy_progress": {}
         }
-
     def setup_models(self):
         """Khởi tạo các models AI"""
         try:
@@ -54,7 +52,6 @@ class MentalHealthApp:
                     "Trong tâm lý học, chúng ta gọi đây là khoảnh khắc cần được lắng nghe và thấu hiểu. Bạn muốn chia sẻ thêm không?"
                 ]
             }
-
             # Thêm từ điển chủ đề tâm lý
             self.therapy_topics = {
                 "stress": {
@@ -89,7 +86,6 @@ class MentalHealthApp:
 
         except Exception as e:
             logging.error(f"❌ Model initialization error: {e}")
-
     def analyze_emotion(self, text):
         """Phân tích cảm xúc với DistilBERT"""
         try:
@@ -125,7 +121,6 @@ class MentalHealthApp:
                 break
             
         return response
-
     def setup_streamlit(self):
         # Bỏ dark/light mode toggle, chỉ dùng dark theme
         st.markdown(
@@ -163,7 +158,6 @@ class MentalHealthApp:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
-
     def update_context(self, emotion, text):
         """Cập nhật context của cuộc trò chuyện"""
         self.context_memory["last_emotion"] = emotion
@@ -182,7 +176,6 @@ class MentalHealthApp:
         except Exception as e:
             logging.error(f"Runtime error: {e}")
             st.error("Có lỗi xảy ra, vui lòng thử lại sau.")
-
 class GoogleSearch:
     def __init__(self):
         self.headers = {
@@ -215,7 +208,6 @@ class GoogleSearch:
         except Exception as e:
             logging.error(f"Search error: {e}")
             return []
-
 # Chạy ứng dụng
 if __name__ == "__main__":
     app = MentalHealthApp()
