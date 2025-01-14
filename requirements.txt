@@ -1,0 +1,11 @@
+# Core
+streamlit
+transformers
+torch
+scikit-learn
+deep-translator
+joblib
+pandas
+numpy
+sentencepiece
+protobuf
