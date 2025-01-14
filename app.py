@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 import logging
 import torch
 import random
@@ -25,6 +25,28 @@ class MentalHealthApp:
             "last_emotion": None,
             "conversation_topics": [],
             "therapy_progress": {}
+        }
+        # Thêm model chat và templates
+        self.chat_model = AutoModelForCausalLM.from_pretrained("vinai/phobert-base")
+        self.tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
+        
+        # Templates cho các tình huống khác nhau
+        self.templates = {
+            "greeting": [
+                "Chào bạn! {response} Hôm nay bạn cảm thấy thế nào?",
+                "Rất vui khi gặp bạn! {response} Bạn muốn chia sẻ điều gì không?",
+                "Xin chào! {response} Mình có thể giúp gì cho bạn không?"
+            ],
+            "empathy": [
+                "Mình hiểu cảm giác của bạn. {response}",
+                "Điều bạn đang trải qua không dễ dàng chút nào. {response}",
+                "Mình ở đây để lắng nghe bạn. {response}"
+            ],
+            "support": [
+                "Bạn đã rất dũng cảm khi chia sẻ điều này. {response}",
+                "Hãy cùng mình tìm cách giải quyết nhé. {response}",
+                "Mình tin bạn sẽ vượt qua được. {response}"
+            ]
         }
     def setup_models(self):
         """Khởi tạo các models AI"""
@@ -105,6 +127,18 @@ class MentalHealthApp:
         except Exception as e:
             logging.error(f"Lỗi phân tích cảm xúc: {e}")
             return "NEGATIVE"
+
+    def generate_response(self, text, emotion):
+        # Chọn template phù hợp
+        if any(word in text.lower() for word in ["chào", "hi", "hello"]):
+            template = random.choice(self.templates["greeting"])
+        elif emotion == "NEGATIVE":
+            template = random.choice(self.templates["empathy"])
+        else:
+            template = random.choice(self.templates["support"])
+            
+        base_response = self.get_response(emotion, text)
+        return template.format(response=base_response)
 
     def get_response(self, emotion, text):
         """Tạo phản hồi thông minh với khả năng search"""
@@ -257,4 +291,5 @@ class GoogleSearch:
 if __name__ == "__main__":
     app = MentalHealthApp()
     app.run()
+
 
