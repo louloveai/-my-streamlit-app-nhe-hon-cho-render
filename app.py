@@ -15,6 +15,12 @@ class MentalHealthApp:
         self.google_search = GoogleSearch()
         if 'messages' not in st.session_state:
             st.session_state.messages = []
+        # Thêm context memory
+        self.context_memory = {
+            "last_emotion": None,
+            "conversation_topics": [],
+            "therapy_progress": {}
+        }
 
     def setup_models(self):
         """Khởi tạo các models AI"""
@@ -46,10 +52,34 @@ class MentalHealthApp:
 
             # Thêm từ điển chủ đề tâm lý
             self.therapy_topics = {
-                "stress": "Stress kéo dài có thể ảnh hưởng đến cả thể chất và tinh thần. Hãy thử các bài tập thư giãn đơn giản.",
-                "anxiety": "Lo âu là phản ứng tự nhiên của cơ thể trước các tình huống căng thẳng. Thở sâu và thiền định có thể giúp ích.",
-                "depression": "Trầm cảm là một tình trạng cần được quan tâm và điều trị. Đừng ngần ngại tìm sự giúp đỡ từ chuyên gia.",
-                "healing": "Chữa lành là một hành trình, không phải đích đến. Mỗi bước nhỏ đều có ý nghĩa."
+                "stress": {
+                    "giải thích": "Stress kéo dài có thể ảnh hưởng đến cả thể chất và tinh thần",
+                    "giải pháp": "Hãy thử các bài tập thư giãn đơn giản, thiền định 10 phút mỗi ngày"
+                },
+                "anxiety": {
+                    "giải thích": "Lo âu là phản ứng tự nhiên của cơ thể trước các tình huống căng thẳng",
+                    "giải pháp": "Thở sâu và thiền định có thể giúp ích, tập trung vào hiện tại"
+                },
+                "depression": {
+                    "giải thích": "Trầm cảm là một tình trạng cần được quan tâm và điều trị",
+                    "giải pháp": "Đừng ngần ngại tìm sự giúp đỡ từ chuyên gia, duy trì các hoạt động yêu thích"
+                },
+                "healing": {
+                    "giải thích": "Chữa lành là một hành trình, không phải đích đến",
+                    "giải pháp": "Mỗi bước nhỏ đều có ý nghĩa, hãy kiên nhẫn với bản thân"
+                },
+                "mất ngủ": {
+                    "giải thích": "Mất ngủ ảnh hưởng đến chất lượng cuộc sống và sức khỏe tinh thần",
+                    "giải pháp": "Thiết lập thói quen ngủ, tránh caffeine, thực hành thiền trước khi ngủ"
+                },
+                "cô đơn": {
+                    "giải thích": "Cô đơn là cảm giác thiếu kết nối với người khác",
+                    "giải pháp": "Tham gia các hoạt động xã hội, chia sẻ với bạn bè, tìm sở thích mới"
+                },
+                "tổn thương": {
+                    "giải thích": "Tổn thương tâm lý cần thời gian để chữa lành",
+                    "giải pháp": "Viết nhật ký, tham vấn chuyên gia, thực hành self-care mỗi ngày"
+                }
             }
 
         except Exception as e:
@@ -80,7 +110,7 @@ class MentalHealthApp:
         # Thêm lời khuyên tâm lý nếu phù hợp
         for topic, advice in self.therapy_topics.items():
             if topic in text.lower():
-                response += f"\n\n{advice}"
+                response += f"\n\n{advice['giải thích']}. {advice['giải pháp']}"
                 
                 # Chủ động search thêm thông tin
                 search_query = f"cách điều trị {topic} tâm lý học"
@@ -129,6 +159,17 @@ class MentalHealthApp:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
 
+    def update_context(self, emotion, text):
+        """Cập nhật context của cuộc trò chuyện"""
+        self.context_memory["last_emotion"] = emotion
+        # Theo dõi chủ đề
+        for topic in self.therapy_topics.keys():
+            if topic in text.lower():
+                self.context_memory["conversation_topics"].append(topic)
+        # Cập nhật tiến trình
+        self.context_memory["therapy_progress"][emotion] = \
+            self.context_memory["therapy_progress"].get(emotion, 0) + 1
+
 class GoogleSearch:
     def __init__(self):
         self.headers = {
@@ -166,3 +207,4 @@ class GoogleSearch:
 if __name__ == "__main__":
     app = MentalHealthApp()
     app.run()
+
