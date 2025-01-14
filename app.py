@@ -1,14 +1,20 @@
-mlit as st
+import streamlit as st
 from transformers import pipeline
 import logging
 import torch
 import random
 from googletrans import GoogleTranslator
+from googlesearch import search
+import requests
+from bs4 import BeautifulSoup
+import re
 
 class MentalHealthApp:
     def __init__(self):
         self.setup_models()
-        self.setup_memory()
+        self.google_search = GoogleSearch()
+        if 'messages' not in st.session_state:
+            st.session_state.messages = []
 
     def setup_models(self):
         """Khởi tạo các models AI"""
@@ -45,13 +51,9 @@ class MentalHealthApp:
                 "depression": "Trầm cảm là một tình trạng cần được quan tâm và điều trị. Đừng ngần ngại tìm sự giúp đỡ từ chuyên gia.",
                 "healing": "Chữa lành là một hành trình, không phải đích đến. Mỗi bước nhỏ đều có ý nghĩa."
             }
-            color: white;
+
         except Exception as e:
             logging.error(f"❌ Model initialization error: {e}")
-
-    def setup_memory(self):
-        if 'messages' not in st.session_state:
-            st.session_state.messages = []
 
     def analyze_emotion(self, text):
         """Phân tích cảm xúc với DistilBERT"""
@@ -64,13 +66,27 @@ class MentalHealthApp:
             return "neutral"
 
     def get_response(self, emotion, text):
-        """Tạo phản hồi thông minh dựa trên cảm xúc và nội dung"""
+        """Tạo phản hồi thông minh với khả năng search"""
         response = random.choice(self.responses[emotion])
         
-        # Phân tích nội dung và thêm lời khuyên tâm lý nếu phù hợp
+        # Kiểm tra nếu cần search
+        if any(keyword in text.lower() for keyword in ["tìm kiếm", "search", "tra cứu", "tìm hiểu"]):
+            search_results = self.google_search.search_and_summarize(text)
+            if search_results:
+                response += "\n\nTôi đã tìm thấy một số thông tin liên quan:\n"
+                for idx, result in enumerate(search_results, 1):
+                    response += f"\n{idx}. {result}\n"
+        
+        # Thêm lời khuyên tâm lý nếu phù hợp
         for topic, advice in self.therapy_topics.items():
             if topic in text.lower():
                 response += f"\n\n{advice}"
+                
+                # Chủ động search thêm thông tin
+                search_query = f"cách điều trị {topic} tâm lý học"
+                extra_info = self.google_search.search_and_summarize(search_query, num_results=1)
+                if extra_info:
+                    response += f"\n\nThông tin bổ sung: {extra_info[0]}"
                 break
             
         return response
@@ -112,6 +128,39 @@ class MentalHealthApp:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
+
+class GoogleSearch:
+    def __init__(self):
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+    def search_and_summarize(self, query, num_results=3):
+        """Tìm kiếm Google và tóm tắt kết quả"""
+        try:
+            results = []
+            search_results = search(query, num_results=num_results)
+            
+            for url in search_results:
+                try:
+                    response = requests.get(url, headers=self.headers, timeout=5)
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    
+                    # Lấy text từ các thẻ p
+                    paragraphs = soup.find_all('p')
+                    text = ' '.join([p.text for p in paragraphs])
+                    
+                    # Làm sạch text
+                    text = re.sub(r'\s+', ' ', text).strip()
+                    if text:
+                        results.append(text[:500])  # Giới hạn độ dài
+                except:
+                    continue
+                    
+            return results
+        except Exception as e:
+            logging.error(f"Search error: {e}")
+            return []
 
 # Chạy ứng dụng
 if __name__ == "__main__":
