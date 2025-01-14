@@ -9,3 +9,6 @@ pandas
 numpy
 sentencepiece
 protobuf
+googlesearch-python
+beautifulsoup4
+requests
